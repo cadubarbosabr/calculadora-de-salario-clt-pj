@@ -1,61 +1,117 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Calculadora Trabalhista 2026 (CLT vs PJ)</title>
-    
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Babel para compilar JSX no navegador -->
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
-      }
-      /* Ajuste para inputs numéricos não mostrarem setas */
-      input::-webkit-outer-spin-button,
-      input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-      input[type=number] {
-        -moz-appearance: textfield;
-      }
-    </style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
 
-    <!-- Import Map para gerenciar dependências React/ESM -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
-        "recharts": "https://esm.sh/recharts@2.10.3"
-      }
-    }
-    </script>
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Animações simples */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
+
 <body>
     <div id="root"></div>
 
-    <!-- Script Principal da Aplicação -->
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'react';
-        import ReactDOM from 'react-dom/client';
-        import { 
-            Briefcase, Wallet, Building2, Calculator, HelpCircle, 
-            DollarSign, MapPin, FileText, PieChart as PieChartIcon, ArrowRightLeft 
-        } from 'lucide-react';
-        import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
-        // --- CONSTANTES E DADOS (Antigo utils/calculations.ts) ---
+        // --- ÍCONES SVG (Para não depender de bibliotecas externas) ---
+        const Icons = {
+            Calculator: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" /><line x1="8" x2="16" y1="6" y2="6" /><line x1="16" x2="16" y1="14" y2="18" /><path d="M16 10h.01" /><path d="M12 10h.01" /><path d="M8 10h.01" /><path d="M12 14h.01" /><path d="M8 14h.01" /><path d="M12 18h.01" /><path d="M8 18h.01" /></svg>,
+            Building2: ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg>,
+            FileText: ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>,
+            Briefcase: ({ size = 20, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>,
+            MapPin: ({ size = 16, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>,
+            Wallet: ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>,
+            DollarSign: ({ size = 18, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+            PieChart: ({ size = 18, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg>,
+            ArrowRightLeft: ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m16 3 4 4-4 4" /><path d="M20 7H4" /><path d="m8 21-4-4 4-4" /><path d="M4 17h16" /></svg>,
+            HelpCircle: ({ size = 18, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+        };
+
+        // --- COMPONENTE DE GRÁFICO (Sem Recharts, usando CSS puro para robustez) ---
+        const NativePieChart = ({ data }) => {
+            // Calcula o gradiente cônico baseado nos dados
+            const total = data.reduce((acc, item) => acc + item.value, 0);
+            let currentAngle = 0;
+            const gradientParts = data.map(item => {
+                const percentage = (item.value / total) * 100;
+                const start = currentAngle;
+                const end = currentAngle + percentage;
+                currentAngle = end;
+                return `${item.color} ${start}% ${end}%`;
+            });
+
+            const gradientString = `conic-gradient(${gradientParts.join(', ')})`;
+            const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+            return (
+                <div className="flex flex-col md:flex-row items-center gap-8 w-full h-full justify-center">
+                    {/* O Gráfico Visual */}
+                    <div className="relative w-48 h-48 rounded-full shadow-inner flex-shrink-0" style={{ background: gradientString }}>
+                        <div className="absolute inset-0 m-auto w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-sm">
+                            <span className="text-xs text-slate-400 font-medium">Total<br />{formatMoney(total)}</span>
+                        </div>
+                    </div>
+
+                    {/* A Legenda */}
+                    <div className="flex flex-col gap-2 w-full">
+                        {data.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm w-full border-b border-slate-50 pb-1 last:border-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                    <span className="text-slate-600">{item.name}</span>
+                                </div>
+                                <span className="font-semibold text-slate-700">{formatMoney(item.value)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- LÓGICA DE NEGÓCIO (Mantida original) ---
 
         const CITY_TIERS = {
             tier1: { label: 'Capitais (SP, RJ, DF)', costFactor: 1.2 },
@@ -89,8 +145,6 @@
 
         const DEDUCTION_PER_DEPENDENT = 189.59;
         const SIMPLIFIED_DISCOUNT = 564.80;
-
-        // --- FUNÇÕES DE CÁLCULO ---
 
         const calculateINSS = (gross) => {
             let tax = 0;
@@ -145,15 +199,13 @@
             const healthInsurance = input.healthInsurance === '' ? 0 : Number(input.healthInsurance);
             const { isSimplesNacionalEmployer, transportVoucher } = input;
 
-            // 1. Employee Discounts
             const inss = calculateINSS(salary);
             const irpf = calculateIRPF(salary, inss, dependents);
-            const estimatedVTCost = 22 * 22; // Estimativa de custo VT
+            const estimatedVTCost = 22 * 22;
             const vtDiscount = transportVoucher ? Math.min(salary * 0.06, estimatedVTCost) : 0;
             const totalDiscounts = inss + irpf + vtDiscount;
             const netSalary = salary - totalDiscounts;
 
-            // 2. Employer Costs
             const fgts = salary * 0.08;
             const vacationProvision = (salary / 12) + (salary / 12 / 3);
             const thirteenthProvision = salary / 12;
@@ -181,16 +233,13 @@
 
         const calculatePJ = (input) => {
             const gross = input.grossIncome === '' ? 0 : Number(input.grossIncome);
-            // Fator R
             const proLabore = gross * 0.28;
             const profitDistribution = gross - proLabore;
-            
             const das = calculateDAS(gross);
             const INSS_CEILING = 8000.00;
             const inssBase = Math.min(proLabore, INSS_CEILING);
             const inss = inssBase * 0.11;
             const irpf = calculateIRPF(proLabore, inss, 0);
-
             const totalTaxes = das + inss + irpf;
             const netIncome = gross - totalTaxes;
 
@@ -230,8 +279,6 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('clt');
-
-            // CLT State
             const [cltInput, setCltInput] = useState({
                 salary: '',
                 dependents: '',
@@ -242,15 +289,12 @@
                 cityTier: 'tier1',
             });
             const [cltResult, setCltResult] = useState(null);
-
-            // PJ State
             const [pjInput, setPjInput] = useState({
                 grossIncome: '',
                 attachment: 'III'
             });
             const [pjResult, setPjResult] = useState(null);
 
-            // Effects
             useEffect(() => {
                 if (cltInput.salary && Number(cltInput.salary) > 0) {
                     setCltResult(calculateAll(cltInput));
@@ -267,16 +311,11 @@
                 }
             }, [pjInput]);
 
-            // Handlers
             const handleCltChange = (e) => {
                 const { name, value, type } = e.target;
                 setCltInput(prev => ({
                     ...prev,
-                    [name]: type === 'checkbox' 
-                        ? e.target.checked 
-                        : name === 'cityTier' 
-                            ? value 
-                            : (value === '' ? '' : Number(value))
+                    [name]: type === 'checkbox' ? e.target.checked : name === 'cityTier' ? value : (value === '' ? '' : Number(value))
                 }));
             };
 
@@ -291,398 +330,197 @@
             const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
             const formatPercent = (val) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val);
 
-            // Charts
             const getEmployerChartData = (res) => [
                 { name: 'Salário Bruto', value: res.grossSalary, color: '#3b82f6' },
                 { name: 'INSS Patronal', value: res.employerBreakdown.inssPatronal, color: '#ef4444' },
                 { name: 'FGTS', value: res.employerBreakdown.fgts, color: '#f59e0b' },
                 { name: '13º/Férias', value: res.employerBreakdown.vacationProvision + res.employerBreakdown.thirteenthProvision, color: '#10b981' },
                 { name: 'Benefícios', value: res.employerBreakdown.otherCosts, color: '#8b5cf6' },
-            ];
+            ].filter(x => x.value > 0);
 
             const getPjTaxChartData = (res) => [
                 { name: 'Líquido', value: res.netIncome, color: '#10b981' },
                 { name: 'DAS (Simples)', value: res.taxes.das, color: '#f59e0b' },
                 { name: 'INSS (Pró-labore)', value: res.taxes.inss, color: '#ef4444' },
                 { name: 'IRPF (Pró-labore)', value: res.taxes.irpf, color: '#3b82f6' },
-            ];
+            ].filter(x => x.value > 0);
 
             return (
-                <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
-                    {/* Header */}
+                <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 fade-in">
                     <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Calculator className="text-blue-600" size={28} />
-                            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                            Calculadora Trabalhista 2026
-                            </h1>
-                        </div>
-                        <div className="text-sm text-slate-500 hidden sm:block">
-                            Simulação Base 2026
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <div className="text-blue-600"><Icons.Calculator size={28} /></div>
+                                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                                    Calculadora Trabalhista 2026
+                                </h1>
+                            </div>
                         </div>
                     </header>
 
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {/* Tab Navigation */}
                         <div className="flex justify-center mb-8">
                             <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex">
-                                <button
-                                onClick={() => setActiveTab('clt')}
-                                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                                    activeTab === 'clt' 
-                                    ? 'bg-blue-600 text-white shadow-md' 
-                                    : 'text-slate-600 hover:bg-slate-50'
-                                }`}
-                                >
-                                <Building2 size={18} />
-                                Custo Contratação (CLT)
+                                <button onClick={() => setActiveTab('clt')} className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'clt' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                    <Icons.Building2 size={18} /> Custo Contratação (CLT)
                                 </button>
-                                <button
-                                onClick={() => setActiveTab('pj')}
-                                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                                    activeTab === 'pj' 
-                                    ? 'bg-indigo-600 text-white shadow-md' 
-                                    : 'text-slate-600 hover:bg-slate-50'
-                                }`}
-                                >
-                                <FileText size={18} />
-                                Recebimento PJ (Oferta)
+                                <button onClick={() => setActiveTab('pj')} className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'pj' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                    <Icons.FileText size={18} /> Recebimento PJ (Oferta)
                                 </button>
                             </div>
                         </div>
 
-                        {/* CLT Tab */}
                         {activeTab === 'clt' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-300">
-                            <div className="lg:col-span-4 space-y-6">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-blue-800">
-                                <Briefcase size={20} className="text-blue-500" />
-                                Dados do Colaborador
-                                </h2>
-
-                                <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Salário Bruto Mensal
-                                    </label>
-                                    <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
-                                    <input
-                                        type="number"
-                                        name="salary"
-                                        value={cltInput.salary}
-                                        onChange={handleCltChange}
-                                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-transparent text-slate-900 placeholder:text-slate-300 font-medium"
-                                        placeholder="0,00"
-                                    />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Região
-                                    </label>
-                                    <div className="relative">
-                                    <MapPin className="absolute left-3 top-2.5 text-slate-400" size={16}/>
-                                    <select
-                                        name="cityTier"
-                                        value={cltInput.cityTier}
-                                        onChange={handleCltChange}
-                                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-transparent text-slate-900"
-                                    >
-                                        {Object.entries(CITY_TIERS).map(([key, info]) => (
-                                        <option key={key} value={key}>{info.label}</option>
-                                        ))}
-                                    </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Dependentes
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="dependents"
-                                        min="0"
-                                        value={cltInput.dependents}
-                                        onChange={handleCltChange}
-                                        placeholder="0"
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent text-slate-900 placeholder:text-slate-300 font-medium"
-                                    />
-                                    </div>
-                                    <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        VR (Dia)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="mealVoucherValue"
-                                        value={cltInput.mealVoucherValue}
-                                        onChange={handleCltChange}
-                                        placeholder="0,00"
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent text-slate-900 placeholder:text-slate-300 font-medium"
-                                    />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Plano de Saúde (Empresa)
-                                    </label>
-                                    <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
-                                    <input
-                                        type="number"
-                                        name="healthInsurance"
-                                        value={cltInput.healthInsurance}
-                                        onChange={handleCltChange}
-                                        placeholder="0,00"
-                                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent text-slate-900 placeholder:text-slate-300 font-medium"
-                                    />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t border-slate-100 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                    <label className="text-sm text-slate-700">Vale Transporte (6%)?</label>
-                                    <input 
-                                        type="checkbox" 
-                                        name="transportVoucher"
-                                        checked={cltInput.transportVoucher}
-                                        onChange={handleCltChange}
-                                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                                    />
-                                    </div>
-                                    
-                                    <div className="flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <label className="text-sm text-slate-700">Empresa Simples Nacional?</label>
-                                        <span className="text-xs text-slate-400">Isenção Patronal</span>
-                                    </div>
-                                    <input 
-                                        type="checkbox" 
-                                        name="isSimplesNacionalEmployer"
-                                        checked={cltInput.isSimplesNacionalEmployer}
-                                        onChange={handleCltChange}
-                                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                                    />
-                                    </div>
-                                </div>
-                                </div>
-                            </div>
-                            </div>
-
-                            <div className="lg:col-span-8 space-y-6">
-                            {!cltResult ? (
-                                <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm min-h-[400px]">
-                                <div className="bg-blue-50 p-4 rounded-full mb-4">
-                                    <Building2 className="text-blue-500" size={48} />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Simulador de Custos CLT</h3>
-                                <p className="text-slate-500 max-w-sm">
-                                    Preencha o salário ao lado para ver quanto a contratação custa realmente para a empresa e quanto sobra para o funcionário.
-                                </p>
-                                </div>
-                            ) : (
-                                <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <InfoCard 
-                                    title="Custo Total Empresa"
-                                    value={cltResult.totalEmployerCost}
-                                    subtitle="/mês"
-                                    icon={Building2}
-                                    colorClass="text-red-500"
-                                    description={`Considerando salário, encargos e provisões.`}
-                                    />
-                                    
-                                    <InfoCard 
-                                    title="Salário Líquido"
-                                    value={cltResult.netSalary}
-                                    subtitle="/mês"
-                                    icon={Wallet}
-                                    colorClass="text-emerald-600"
-                                    description={`Após descontos oficiais.`}
-                                    />
-                                </div>
-
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                    <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                                    <DollarSign size={18} />
-                                    Composição do Custo
-                                    </h3>
-                                    <div className="h-64 w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                        <Pie
-                                            data={getEmployerChartData(cltResult)}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                        >
-                                            {getEmployerChartData(cltResult).map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(value) => formatMoney(value)} />
-                                        <Legend verticalAlign="bottom" height={36}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    </div>
-                                </div>
-                                </>
-                            )}
-                            </div>
-                        </div>
-                        )}
-
-                        {/* PJ Tab */}
-                        {activeTab === 'pj' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-300">
-                            <div className="lg:col-span-4 space-y-6">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-indigo-800">
-                                <FileText size={20} className="text-indigo-500" />
-                                Oferta PJ (B2B)
-                                </h2>
-
-                                <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Valor da Proposta (Nota Fiscal)
-                                    </label>
-                                    <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
-                                    <input
-                                        type="number"
-                                        name="grossIncome"
-                                        value={pjInput.grossIncome}
-                                        onChange={handlePjChange}
-                                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-transparent text-slate-900 placeholder:text-slate-300 font-medium"
-                                        placeholder="0,00"
-                                    />
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-1">Valor mensal bruto da NF.</p>
-                                </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex gap-3 items-start">
-                                <HelpCircle className="text-indigo-500 flex-shrink-0 mt-1" size={18} />
-                                <p className="text-sm text-indigo-700">
-                                <strong>Regra Utilizada:</strong> Simples Nacional Anexo III com <strong>Fator R</strong>.
-                                A calculadora define automaticamente o Pró-labore em 28% do faturamento para garantir a menor alíquota de imposto possível para prestadores de serviço intelectuais.
-                                </p>
-                            </div>
-                            </div>
-
-                            <div className="lg:col-span-8 space-y-6">
-                            {!pjResult ? (
-                                <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm min-h-[400px]">
-                                <div className="bg-indigo-50 p-4 rounded-full mb-4">
-                                    <FileText className="text-indigo-500" size={48} />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Simulador Líquido PJ</h3>
-                                <p className="text-slate-500 max-w-sm">
-                                    Insira o valor da nota fiscal mensal para ver o detalhamento de impostos (Simples, INSS e IRPF) e o valor líquido real.
-                                </p>
-                                </div>
-                            ) : (
-                                <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <InfoCard 
-                                    title="Líquido Disponível"
-                                    value={pjResult.netIncome}
-                                    subtitle="/mês"
-                                    icon={Wallet}
-                                    colorClass="text-emerald-600"
-                                    description={`O que realmente cai na conta da empresa + pessoa física somados.`}
-                                    />
-                                    
-                                    <InfoCard 
-                                    title="Impostos Totais"
-                                    value={pjResult.taxes.total}
-                                    subtitle={`(${formatPercent(pjResult.effectiveRate)})`}
-                                    icon={ArrowRightLeft}
-                                    colorClass="text-red-500"
-                                    description="Soma do DAS, INSS e IRPF."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                    <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                                        <PieChartIcon size={18} />
-                                        Distribuição do Faturamento
-                                    </h3>
-                                    <div className="h-64 w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                            data={getPjTaxChartData(pjResult)}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                            >
-                                            {getPjTaxChartData(pjResult).map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                            </Pie>
-                                            <Tooltip formatter={(value) => formatMoney(value)} />
-                                            <Legend verticalAlign="bottom" height={36}/>
-                                        </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    </div>
-
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center">
-                                        <h3 className="font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-                                            Detalhamento Tributário
-                                        </h3>
-                                        <div className="space-y-3 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Nota Fiscal (Bruto)</span>
-                                                <span className="font-bold text-slate-800">{formatMoney(pjResult.grossInvoice)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Pró-labore Definido (28%)</span>
-                                                <span className="text-slate-600">{formatMoney(pjResult.breakdown.proLabore)}</span>
-                                            </div>
-                                            <div className="border-t border-slate-50 my-2 pt-2">
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">(-) DAS (Simples Nacional)</span>
-                                                    <span className="text-red-500">{formatMoney(pjResult.taxes.das)}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">(-) INSS (11% do Pró-labore)</span>
-                                                    <span className="text-red-500">{formatMoney(pjResult.taxes.inss)}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">(-) IRPF (Pessoa Física)</span>
-                                                    <span className="text-red-500">{formatMoney(pjResult.taxes.irpf)}</span>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 fade-in">
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                        <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-blue-800">
+                                            <span className="text-blue-500"><Icons.Briefcase size={20} /></span>
+                                            Dados do Colaborador
+                                        </h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Salário Bruto Mensal</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                                    <input type="number" name="salary" value={cltInput.salary} onChange={handleCltChange} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0,00" />
                                                 </div>
                                             </div>
-                                            <div className="flex justify-between pt-2 border-t border-slate-200">
-                                                <span className="font-bold text-emerald-600">Resultado Líquido</span>
-                                                <span className="font-bold text-emerald-600 text-lg">{formatMoney(pjResult.netIncome)}</span>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Região</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2.5 text-slate-400"><Icons.MapPin size={16} /></span>
+                                                    <select name="cityTier" value={cltInput.cityTier} onChange={handleCltChange} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg outline-none bg-white">
+                                                        {Object.entries(CITY_TIERS).map(([key, info]) => (
+                                                            <option key={key} value={key}>{info.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Dependentes</label>
+                                                    <input type="number" name="dependents" min="0" value={cltInput.dependents} onChange={handleCltChange} placeholder="0" className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">VR (Dia)</label>
+                                                    <input type="number" name="mealVoucherValue" value={cltInput.mealVoucherValue} onChange={handleCltChange} placeholder="0,00" className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Plano de Saúde (Empresa)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                                    <input type="number" name="healthInsurance" value={cltInput.healthInsurance} onChange={handleCltChange} placeholder="0,00" className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg outline-none" />
+                                                </div>
+                                            </div>
+                                            <div className="pt-4 border-t border-slate-100 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm text-slate-700">Vale Transporte (6%)?</label>
+                                                    <input type="checkbox" name="transportVoucher" checked={cltInput.transportVoucher} onChange={handleCltChange} className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex flex-col">
+                                                        <label className="text-sm text-slate-700">Empresa Simples Nacional?</label>
+                                                        <span className="text-xs text-slate-400">Isenção Patronal</span>
+                                                    </div>
+                                                    <input type="checkbox" name="isSimplesNacionalEmployer" checked={cltInput.isSimplesNacionalEmployer} onChange={handleCltChange} className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                </>
-                            )}
+
+                                <div className="lg:col-span-8 space-y-6">
+                                    {!cltResult ? (
+                                        <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm min-h-[400px]">
+                                            <div className="bg-blue-50 p-4 rounded-full mb-4"><span className="text-blue-500"><Icons.Building2 size={48} /></span></div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-2">Simulador de Custos CLT</h3>
+                                            <p className="text-slate-500 max-w-sm">Preencha o salário ao lado para ver quanto a contratação custa realmente para a empresa.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <InfoCard title="Custo Total Empresa" value={cltResult.totalEmployerCost} subtitle="/mês" icon={Icons.Building2} colorClass="text-red-500" description="Considerando salário, encargos e provisões." />
+                                                <InfoCard title="Salário Líquido" value={cltResult.netSalary} subtitle="/mês" icon={Icons.Wallet} colorClass="text-emerald-600" description="Após descontos oficiais." />
+                                            </div>
+                                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                                <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><Icons.DollarSign size={18} /> Composição do Custo</h3>
+                                                <div className="h-64 w-full">
+                                                    <NativePieChart data={getEmployerChartData(cltResult)} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeTab === 'pj' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 fade-in">
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                        <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 text-indigo-800">
+                                            <span className="text-indigo-500"><Icons.FileText size={20} /></span> Oferta PJ (B2B)
+                                        </h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Valor da Proposta (Nota Fiscal)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2.5 text-slate-400">R$</span>
+                                                    <input type="number" name="grossIncome" value={pjInput.grossIncome} onChange={handlePjChange} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0,00" />
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-1">Valor mensal bruto da NF.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex gap-3 items-start">
+                                        <span className="text-indigo-500 flex-shrink-0 mt-1"><Icons.HelpCircle size={18} /></span>
+                                        <p className="text-sm text-indigo-700">
+                                            <strong>Regra Utilizada:</strong> Simples Nacional Anexo III com <strong>Fator R</strong>.
+                                            Pró-labore automático de 28% para garantir menor alíquota.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-8 space-y-6">
+                                    {!pjResult ? (
+                                        <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm min-h-[400px]">
+                                            <div className="bg-indigo-50 p-4 rounded-full mb-4"><span className="text-indigo-500"><Icons.FileText size={48} /></span></div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-2">Simulador Líquido PJ</h3>
+                                            <p className="text-slate-500 max-w-sm">Insira o valor da nota fiscal para ver o detalhamento de impostos.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <InfoCard title="Líquido Disponível" value={pjResult.netIncome} subtitle="/mês" icon={Icons.Wallet} colorClass="text-emerald-600" description="O que realmente cai na conta." />
+                                                <InfoCard title="Impostos Totais" value={pjResult.taxes.total} subtitle={`(${formatPercent(pjResult.effectiveRate)})`} icon={Icons.ArrowRightLeft} colorClass="text-red-500" description="Soma do DAS, INSS e IRPF." />
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                                    <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><Icons.PieChart size={18} /> Distribuição do Faturamento</h3>
+                                                    <div className="h-64 w-full">
+                                                        <NativePieChart data={getPjTaxChartData(pjResult)} />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                                                    <h3 className="font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Detalhamento Tributário</h3>
+                                                    <div className="space-y-3 text-sm">
+                                                        <div className="flex justify-between"><span className="text-slate-500">Nota Fiscal (Bruto)</span><span className="font-bold text-slate-800">{formatMoney(pjResult.grossInvoice)}</span></div>
+                                                        <div className="flex justify-between"><span className="text-slate-500">Pró-labore (28%)</span><span className="text-slate-600">{formatMoney(pjResult.breakdown.proLabore)}</span></div>
+                                                        <div className="border-t border-slate-50 my-2 pt-2">
+                                                            <div className="flex justify-between"><span className="text-slate-500">(-) DAS</span><span className="text-red-500">{formatMoney(pjResult.taxes.das)}</span></div>
+                                                            <div className="flex justify-between"><span className="text-slate-500">(-) INSS</span><span className="text-red-500">{formatMoney(pjResult.taxes.inss)}</span></div>
+                                                            <div className="flex justify-between"><span className="text-slate-500">(-) IRPF</span><span className="text-red-500">{formatMoney(pjResult.taxes.irpf)}</span></div>
+                                                        </div>
+                                                        <div className="flex justify-between pt-2 border-t border-slate-200"><span className="font-bold text-emerald-600">Resultado Líquido</span><span className="font-bold text-emerald-600 text-lg">{formatMoney(pjResult.netIncome)}</span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </main>
                 </div>
@@ -693,4 +531,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
